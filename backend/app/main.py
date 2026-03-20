@@ -19,15 +19,24 @@ async def lifespan(_: FastAPI):
 api = FastAPI(lifespan=lifespan)
 
 
-from services.signal import compute_score, load_data, classify
+from services.signal import classify, compute_score, load_data, normalize, score_max, score_min
 
 @api.get("/signals/{symbol}")
 def get_signal(symbol: str):
     data = load_data(symbol)
-    score = compute_score(data)
+    raw_score = compute_score(data)
+    normalized_score = normalize(raw_score, score_min, score_max)
 
     return {
         "symbol": symbol,
-        "score": score,
-        "action": classify(score)
+        "raw_score": raw_score,
+        "normalized_score": normalized_score,
+        "factors": {
+            "gold_beta": data.get('gold_beta'),
+            "relative_strength": data.get('relative_strength'),
+            "momentum": data.get('momentum'),
+            "volatility": data.get('volatility'),
+            "liquidity": data.get('liquidity')
+        },
+        "signal": classify(normalized_score)
     }
