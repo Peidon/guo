@@ -1,8 +1,39 @@
-FROM python:3.11
+# Stage 1: Builder - Install build dependencies and pre-build Python wheels
+FROM python:3.11-slim-buster as builder
 
 WORKDIR /app
+
+# Install system dependencies required for building Python packages (e.g., psycopg2-binary)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements.txt and pre-build wheels for dependencies
+# This step is cached if requirements.txt doesn't change, speeding up builds
+COPY requirements.txt .
+RUN pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels -r requirements.txt
+
+# Stage 2: Production image - Minimal image for running the application
+FROM python:3.11-slim-buster
+
+WORKDIR /app
+
+# Copy pre-built wheels and Python site-packages from the builder stage
+COPY --from=builder /app/wheels /app/wheels
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+
+# Install Python dependencies from the pre-built wheels
+RUN pip install --no-cache-dir --no-index --find-links=/app/wheels -r requirements.txt \
+    && rm -rf /app/wheels
+
+# Copy your application code into the container
 COPY . .
 
-RUN pip install -r requirements.txt
+# Expose the port your FastAPI application listens on
+# Cloud Run will use this, or you can specify it during deployment
+EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0"]
+# Command to run the FastAPI application using Uvicorn
+# Assumes your FastAPI app instance is named 'app' in 'main.py'
+CMD ["uvicorn", "main:api", "--host", "0.0.0.0", "--port", "8000"]

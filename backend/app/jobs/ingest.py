@@ -8,7 +8,7 @@ from models.stock_price import StockPrice
 
 Currency = ["AUD", "USD"]
 MetalSymbol = ["XAU", "XAG", "XPT", "XPD"] # Gold, Silver, Platinum, Palladium
-StockSymbol = ["GDR.AX", "ML8.AX", "MM8.AX"]
+StockSymbol = ["ML8.AX", "MM8.AX"]
 
 def adapt(data):
     data['timestamp'] = datetime.fromtimestamp(data['timestamp'], tz=timezone.utc)
