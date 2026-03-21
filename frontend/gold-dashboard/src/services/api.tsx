@@ -4,7 +4,7 @@ const API = axios.create({
   baseURL: "http://localhost:8000"
 });
 
-export const getGold = () => API.get("/gold");
+export const getGold = (begin: number, end: number) => API.get(`/gold?begin=${begin}&end=${end}`);
 export const getSignals = () => API.get("/signals");
 export interface StockResponse {
   // Define the expected properties of the stock response here

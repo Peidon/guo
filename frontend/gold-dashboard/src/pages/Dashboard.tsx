@@ -1,4 +1,4 @@
-import { useEffect, useState, type SetStateAction } from "react";
+import { useEffect, useState } from "react";
 import { getGold, getSignals, getEvents } from "../services/api";
 
 import GoldChart from "../components/GoldChart";
@@ -6,15 +6,31 @@ import SignalCard from "../components/signal";
 import EventFeed from "../components/EventFeed";
 import PortfolioPanel from "../components/PortfolioPanel";
 
+interface Signal {
+  symbol: string;
+  score: number;
+  action: string;
+}
+
+interface Event {
+  symbol: string;
+  title: string;
+}
+
 export default function Dashboard() {
   const [gold, setGold] = useState([]);
-  const [signals, setSignals] = useState([]);
-  const [events, setEvents] = useState([]);
+  const [signals, setSignals] = useState<Signal[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
 
   useEffect(() => {
-    getGold().then((res: { data: SetStateAction<never[]>; }) => setGold(res.data));
-    getSignals().then((res: { data: SetStateAction<never[]>; }) => setSignals(res.data));
-    getEvents().then((res: { data: SetStateAction<never[]>; }) => setEvents(res.data));
+    // Should ideally use a component to select the time range, 
+    // but for now we just fetch the last 24 hours of data
+    const now = Math.floor(Date.now() / 1000);
+    const oneDayAgo = now - 86400; // 24 hours in seconds
+    
+    getGold(oneDayAgo, now).then(res => setGold(res.data));
+    getSignals().then(res => setSignals(res.data));
+    getEvents().then(res => setEvents(res.data));
   }, []);
 
   return (

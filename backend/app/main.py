@@ -20,6 +20,12 @@ api = FastAPI(lifespan=lifespan)
 
 
 from services.signal import classify, compute_score, load_data, normalize, score_max, score_min
+from services.metal_service import get_history_price
+
+@api.get("/gold")
+def get_gold(begin: int, end: int, symbol: str = "XAU"):
+    prices = get_history_price(symbol, begin, end)
+    return prices
 
 @api.get("/signals/{symbol}")
 def get_signal(symbol: str):
@@ -30,7 +36,7 @@ def get_signal(symbol: str):
     return {
         "symbol": symbol,
         "raw_score": raw_score,
-        "normalized_score": normalized_score,
+        "score": normalized_score,
         "factors": {
             "gold_beta": data.get('gold_beta'),
             "relative_strength": data.get('relative_strength'),
@@ -38,5 +44,5 @@ def get_signal(symbol: str):
             "volatility": data.get('volatility'),
             "liquidity": data.get('liquidity')
         },
-        "signal": classify(normalized_score)
+        "action": classify(normalized_score)
     }

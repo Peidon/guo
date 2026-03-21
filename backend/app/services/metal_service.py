@@ -1,7 +1,39 @@
+from datetime import datetime, timezone
+
 import requests
+from core.db import SessionLocal
 from core.config import settings
 from loguru import logger
+from models.metal_price import MetalPrice
+from sqlalchemy import select
 
+
+def get_history_price(symbol, begin, end) -> list:
+    """
+    :param symbol: Metal Symbol "XAU", "XAG", "XPT", "XPD"
+    :param begin: timestamp
+    :param end: timestamp
+    :return: list[ chart_data{time: number, price: number} ]
+    """
+    begin_time = datetime.fromtimestamp(begin, tz=timezone.utc)
+    end_time = datetime.fromtimestamp(end, tz=timezone.utc)
+
+    db = SessionLocal()
+    try:
+        rows = db.execute(
+            select(MetalPrice.timestamp, MetalPrice.price)
+            .where(
+                MetalPrice.metal == symbol,
+                MetalPrice.timestamp >= begin_time,
+                MetalPrice.timestamp <= end_time,
+                MetalPrice.price.is_not(None),
+            )
+            .order_by(MetalPrice.timestamp.asc())
+        ).all()
+    finally:
+        db.close()
+
+    return [{"time": int(timestamp.timestamp()), "price": float(price)} for timestamp, price in rows]
 
 def fetch_metal_price(symbol, curr, date = ""):
     """
