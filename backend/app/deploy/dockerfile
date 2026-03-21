@@ -1,5 +1,5 @@
 # Stage 1: Builder - Install build dependencies and pre-build Python wheels
-FROM python:3.11-slim-buster as builder
+FROM python:3.11-slim-bookworm as builder # Recommended: use 'bookworm' (Debian 12) or 'bullseye' (Debian 11)
 
 WORKDIR /app
 
