@@ -9,8 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements.txt and pre-build wheels for dependencies
-# This step is cached if requirements.txt doesn't change, speeding up builds
+# Copy requirements.txt
 COPY backend/app/requirements.txt .
 
 # Use 'pip download' to download all packages and their dependencies
@@ -26,8 +25,10 @@ WORKDIR /app
 # Copy pre-built wheels from the builder stage
 COPY --from=builder /app/wheels /app/wheels
 
+# Copy requirements.txt into the second stage's WORKDIR (/app)
+COPY backend/app/requirements.txt .
+
 # Install Python dependencies from the pre-built wheels downloaded in stage 1
-# The requirements.txt is already in the build context from the previous COPY
 RUN pip install --no-cache-dir --no-index --find-links=/app/wheels -r requirements.txt \
     && rm -rf /app/wheels
 
