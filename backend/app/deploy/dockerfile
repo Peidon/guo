@@ -1,6 +1,5 @@
 # Stage 1: Builder - Install build dependencies and pre-build Python wheels
 FROM python:3.11-slim-bookworm as builder
-# Recommended: use 'bookworm' (Debian 12) or 'bullseye' (Debian 11)
 
 WORKDIR /app
 
@@ -13,19 +12,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy requirements.txt and pre-build wheels for dependencies
 # This step is cached if requirements.txt doesn't change, speeding up builds
 COPY backend/app/requirements.txt .
-RUN pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels -r requirements.txt
+
+# Use 'pip download' to download all packages and their dependencies
+# as wheels into the /app/wheels directory. This ensures all transitive
+# dependencies are present for the --no-index install later.
+RUN pip download --no-cache-dir --dest /app/wheels -r requirements.txt
 
 # Stage 2: Production image - Minimal image for running the application
 FROM python:3.11-slim-bookworm
 
 WORKDIR /app
 
-# Copy pre-built wheels and Python site-packages from the builder stage
+# Copy pre-built wheels from the builder stage
 COPY --from=builder /app/wheels /app/wheels
-COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 
-# Install Python dependencies from the pre-built wheels
-COPY backend/app/requirements.txt .
+# Install Python dependencies from the pre-built wheels downloaded in stage 1
+# The requirements.txt is already in the build context from the previous COPY
 RUN pip install --no-cache-dir --no-index --find-links=/app/wheels -r requirements.txt \
     && rm -rf /app/wheels
 
@@ -33,9 +35,7 @@ RUN pip install --no-cache-dir --no-index --find-links=/app/wheels -r requiremen
 COPY backend/app/ .
 
 # Expose the port your FastAPI application listens on
-# Cloud Run will use this, or you can specify it during deployment
 EXPOSE 8000
 
 # Command to run the FastAPI application using Uvicorn
-# Assumes your FastAPI app instance is named 'app' in 'main.py'
 CMD ["uvicorn", "main:api", "--host", "0.0.0.0", "--port", "8000"]
