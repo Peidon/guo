@@ -10,22 +10,37 @@ score_max = 100.0
 import numpy as np
 
 def volatility(returns):
-    return np.std(returns)
+    returns_arr = np.atleast_1d(np.asarray(returns, dtype=float)).reshape(-1)
+    return np.std(returns_arr)
 
 '''
 How strongly the stock reacts to gold price.
 '''
 def gold_beta(stock_returns, gold_returns):
     # simplified covariance / variance
-    covariance = np.cov(stock_returns, gold_returns)[0, 1]
-    variance = np.var(gold_returns)
-    if variance == 0:
+    stock_array = np.atleast_1d(np.asarray(stock_returns, dtype=float)).reshape(-1)
+    gold_array = np.atleast_1d(np.asarray(gold_returns, dtype=float)).reshape(-1)
+
+    size = min(stock_array.size, gold_array.size)
+    if size < 2:
         return 0.0
-    return covariance / variance
+
+    stock_array = stock_array[:size]
+    gold_array = gold_array[:size]
+
+    variance = np.var(gold_array)
+    if variance == 0 or np.isnan(variance):
+        return 0.0
+
+    covariance = np.cov(stock_array, gold_array, bias=True)[0, 1]
+    if np.isnan(covariance):
+        return 0.0
+
+    return float(covariance / variance)
 
 
 def relative_strength(stock_return, gold_return):
-    return stock_return - gold_return
+    return stock_return - float(gold_return)
 
 def momentum(prices):
     w = window_width // 2

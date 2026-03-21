@@ -12,11 +12,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Copy requirements.txt and pre-build wheels for dependencies
 # This step is cached if requirements.txt doesn't change, speeding up builds
-COPY requirements.txt .
+COPY ../requirements.txt .
 RUN pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels -r requirements.txt
 
 # Stage 2: Production image - Minimal image for running the application
-FROM python:3.11-slim-buster
+FROM python:3.11-slim-bookworm
 
 WORKDIR /app
 
