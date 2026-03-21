@@ -25,6 +25,7 @@ COPY --from=builder /app/wheels /app/wheels
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 
 # Install Python dependencies from the pre-built wheels
+COPY backend/app/requirements.txt .
 RUN pip install --no-cache-dir --no-index --find-links=/app/wheels -r requirements.txt \
     && rm -rf /app/wheels
 
