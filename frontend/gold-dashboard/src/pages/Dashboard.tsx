@@ -33,7 +33,7 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div style={{ padding: "20px", color: "white", background: "#111" }}>
+    <div style={{ padding: "20px", color: "white", background: "#171414ff" }}>
       <h1>Gold Market Dashboard</h1>
 
       {/* Gold Chart */}
