@@ -1,17 +1,10 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:8000"
+  baseURL: "/api"
 });
 
 export const getGold = (begin: number, end: number) => API.get(`/gold?begin=${begin}&end=${end}`);
-export const getSignals = () => API.get("/signals");
-export interface StockResponse {
-  // Define the expected properties of the stock response here
-  // Example:
-  // symbol: string;
-  // price: number;
-}
-
-export const getStock = (symbol: string): Promise<{ data: StockResponse }> => API.get(`/stocks/${symbol}`);
+export const getSignals = (symbol: string) => API.get(`/signals/${symbol}`);
+export const getStock = (symbol: string) => API.get(`/stocks/${symbol}`);
 export const getEvents = () => API.get("/events");

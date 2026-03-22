@@ -1,16 +1,10 @@
 import { useEffect, useState } from "react";
 import { getGold, getSignals, getEvents } from "../services/api";
 
-import GoldChart from "../components/GoldChart";
-import SignalCard from "../components/signal";
+import GoldChart, { type GoldChartData } from "../components/GoldChart";
+import SignalCard, { type SignalCardProps} from "../components/signal";
 import EventFeed from "../components/EventFeed";
 import PortfolioPanel from "../components/PortfolioPanel";
-
-interface Signal {
-  symbol: string;
-  score: number;
-  action: string;
-}
 
 interface Event {
   symbol: string;
@@ -18,8 +12,8 @@ interface Event {
 }
 
 export default function Dashboard() {
-  const [gold, setGold] = useState([]);
-  const [signals, setSignals] = useState<Signal[]>([]);
+  const [gold, setGold] = useState<GoldChartData[]>([]);
+  const [signals, setSignals] = useState<SignalCardProps[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
 
   useEffect(() => {
@@ -27,9 +21,14 @@ export default function Dashboard() {
     // but for now we just fetch the last 24 hours of data
     const now = Math.floor(Date.now() / 1000);
     const oneDayAgo = now - 86400; // 24 hours in seconds
+
+    const stockSymbol = "ML8.AX";
     
-    getGold(oneDayAgo, now).then(res => setGold(res.data));
-    getSignals().then(res => setSignals(res.data));
+    getGold(oneDayAgo, now).then(res => {
+      // console.log('Gold data received:', res.data);
+      setGold(res.data);
+    });
+    getSignals(stockSymbol).then(res => {setSignals(res.data);});
     getEvents().then(res => setEvents(res.data));
   }, []);
 
@@ -42,9 +41,7 @@ export default function Dashboard() {
 
       {/* Signals */}
       <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
-        {signals.map((s, i) => (
-          <SignalCard key={i} {...s} />
-        ))}
+        {signals[0] && <SignalCard {...signals[0]} />}
       </div>
 
       {/* Events */}

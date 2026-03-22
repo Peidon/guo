@@ -1,13 +1,13 @@
-type SignalCardProps = {
+export type SignalCardProps = {
   symbol: string;
   score: number;
   action: "BUY" | "SELL" | string;
 };
 
-export default function SignalCard({ symbol, score, action }: SignalCardProps) {
+export default function SignalCard(props: SignalCardProps) {
   const color =
-    action === "BUY" ? "green" :
-    action === "SELL" ? "red" : "gray";
+    props.action === "BUY" ? "green" :
+    props.action === "SELL" ? "red" : "gray";
 
   return (
     <div style={{
@@ -16,9 +16,9 @@ export default function SignalCard({ symbol, score, action }: SignalCardProps) {
       borderRadius: "8px",
       width: "120px"
     }}>
-      <h3>{symbol}</h3>
-      <p style={{ color }}>{action}</p>
-      <p>Score: {score}</p>
+      <h3>{props.symbol}</h3>
+      <p style={{ color }}>{props.action}</p>
+      <p>Score: {props.score}</p>
     </div>
   );
 }
