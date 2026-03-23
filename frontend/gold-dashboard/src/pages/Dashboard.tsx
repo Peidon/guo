@@ -13,7 +13,7 @@ interface Event {
 
 export default function Dashboard() {
   const [gold, setGold] = useState<GoldChartData[]>([]);
-  const [signals, setSignals] = useState<SignalCardProps[]>([]);
+  const [signal, setSignal] = useState<SignalCardProps>();
   const [events, setEvents] = useState<Event[]>([]);
 
   useEffect(() => {
@@ -28,7 +28,7 @@ export default function Dashboard() {
       // console.log('Gold data received:', res.data);
       setGold(res.data);
     });
-    getSignals(stockSymbol).then(res => {setSignals(res.data);});
+    getSignals(stockSymbol).then(res => {setSignal(res.data);});
     getEvents().then(res => setEvents(res.data));
   }, []);
 
@@ -41,7 +41,7 @@ export default function Dashboard() {
 
       {/* Signals */}
       <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
-        {signals[0] && <SignalCard {...signals[0]} />}
+        {signal && <SignalCard {...signal} />}
       </div>
 
       {/* Events */}

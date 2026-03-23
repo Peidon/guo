@@ -1,43 +1,44 @@
-# Stage 1: Builder - Install build dependencies and pre-build Python wheels
+# Stage 1: Builder
 FROM python:3.11-slim-bookworm as builder
 
 WORKDIR /app
 
-# Install system dependencies required for building Python packages (e.g., psycopg2-binary)
+# 1. Install EVERYTHING needed to compile C-extensions
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     gcc \
     libpq-dev \
+    python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements.txt
 COPY backend/app/requirements.txt .
 
-# Use 'pip download' to download all packages and their dependencies
-# as wheels into the /app/wheels directory. This ensures all transitive
-# dependencies are present for the --no-index install later.
-RUN pip download --no-cache-dir --dest /app/wheels -r requirements.txt
+# 2. CRITICAL: Use 'pip wheel' instead of 'pip download'
+# This compiles psycopg2 into a .whl file that is ready for the next stage
+RUN pip wheel --no-cache-dir --wheel-dir /app/wheels -r requirements.txt
 
-# Stage 2: Production image - Minimal image for running the application
+
+# Stage 2: Production
 FROM python:3.11-slim-bookworm
 
 WORKDIR /app
 
-# Copy pre-built wheels from the builder stage
-COPY --from=builder /app/wheels /app/wheels
+# 3. Install ONLY the runtime library (libpq5)
+# This provides the .so files that the psycopg2 wheel expects to find
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements.txt into the second stage's WORKDIR (/app)
+# Copy wheels from builder
+COPY --from=builder /app/wheels /app/wheels
 COPY backend/app/requirements.txt .
 
-# Install Python dependencies from the pre-built wheels downloaded in stage 1
+# 4. Install the pre-compiled wheels
 RUN pip install --no-cache-dir --no-index --find-links=/app/wheels -r requirements.txt \
     && rm -rf /app/wheels
 
-# Copy your application code into the container
 COPY backend/app/ .
 
-# Expose the port your FastAPI application listens on
 EXPOSE 8000
 
-# Command to run the FastAPI application using Uvicorn
 CMD ["uvicorn", "main:api", "--host", "0.0.0.0", "--port", "8000"]

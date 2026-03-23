@@ -6,3 +6,4 @@ loguru~=0.7.3
 fastapi~=0.128.8
 numpy~=2.4.3
 uvicorn[standard]
+psycopg2==2.9.9
