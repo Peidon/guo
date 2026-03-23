@@ -18,6 +18,8 @@ def adapt(data):
 def ingest_gold():
     db = SessionLocal()
     data = fetch_metal_price("XAU", "AUD")
+    if not data:
+        return
     data = adapt(data)
     record = MetalPrice(**data)
     db.add(record)
