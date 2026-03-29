@@ -46,3 +46,9 @@ def get_signal(symbol: str):
         },
         "action": classify(normalized_score)
     }
+
+from core.enumerate import StockSymbols
+
+@api.get("/stocks")
+def get_stocks():
+    return StockSymbols

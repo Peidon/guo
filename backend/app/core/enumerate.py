@@ -1,0 +1,1 @@
+StockSymbols = ["ML8.AX", "MM8.AX"]

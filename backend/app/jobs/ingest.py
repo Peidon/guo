@@ -8,7 +8,6 @@ from models.stock_price import StockPrice
 
 Currency = ["AUD", "USD"]
 MetalSymbol = ["XAU", "XAG", "XPT", "XPD"] # Gold, Silver, Platinum, Palladium
-StockSymbol = ["ML8.AX", "MM8.AX"]
 
 def adapt(data):
     data['timestamp'] = datetime.fromtimestamp(data['timestamp'], tz=timezone.utc)
@@ -26,10 +25,12 @@ def ingest_gold():
     db.commit()
     db.close()
 
+from core.enumerate import StockSymbols
+
 def ingest_stocks():
     db = SessionLocal()
 
-    for symbol in StockSymbol:
+    for symbol in StockSymbols:
         data = fetch_stock_price(symbol)
         if not data:
             continue

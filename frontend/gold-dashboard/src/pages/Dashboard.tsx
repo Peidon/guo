@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getGold, getSignals } from "../services/api";
+import { getGold, getSignals, getStocks } from "../services/api";
 
 import GoldChart, { type GoldChartData } from "../components/GoldChart";
 import SignalCard, { type SignalCardProps} from "../components/signal";
@@ -7,21 +7,26 @@ import SignalCard, { type SignalCardProps} from "../components/signal";
 
 export default function Dashboard() {
   const [gold, setGold] = useState<GoldChartData[]>([]);
-  const [signal, setSignal] = useState<SignalCardProps>();
+  const [signals, setSignals] = useState<SignalCardProps[]>([]);
+  const [, setStocks] = useState<string[]>([]);
 
   useEffect(() => {
-    // Should ideally use a component to select the time range, 
-    // but for now we just fetch the last 24 hours of data
     const now = Math.floor(Date.now() / 1000);
-    const oneDayAgo = now - 86400 * 7; // 24 hours in seconds
+    const oneDayAgo = now - 86400 * 7;
 
-    const stockSymbol = "ML8.AX";
-    
-    getGold(oneDayAgo, now).then(res => {
-      // console.log('Gold data received:', res.data);
-      setGold(res.data);
+    getGold(oneDayAgo, now).then(resp => {
+      setGold(resp.data);
     });
-    getSignals(stockSymbol).then(res => {setSignal(res.data);});
+
+    getStocks().then(resp => {
+      setStocks(resp.data);
+      // Fetch signals for all stocks after stocks are loaded
+      Promise.all(
+        resp.data.map((stock: string) => getSignals(stock).then(r => r.data))
+      ).then((allSignals: SignalCardProps[]) => {
+        setSignals(allSignals);
+      });
+    });
   }, []);
 
   return (
@@ -32,11 +37,11 @@ export default function Dashboard() {
       <GoldChart data={gold} />
 
       {/* Signals */}
-      <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
-        {signal && <SignalCard {...signal} />}
+      <div style={{ display: "flex", gap: "10px", marginTop: "20px", flexWrap: "wrap" }}>
+        {signals.map((signal, idx) => (
+          <SignalCard key={signal.symbol + idx} {...signal} />
+        ))}
       </div>
-
-      {}
 
     </div>
   );
