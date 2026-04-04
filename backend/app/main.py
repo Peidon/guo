@@ -22,6 +22,10 @@ api = FastAPI(lifespan=lifespan)
 from services.signal import classify, compute_score, load_data, normalize, score_max, score_min
 from services.metal_service import get_history_price
 
+@api.get("/")
+def hello():
+    return "Hello, I'm jing service. "
+
 @api.get("/gold")
 def get_gold(begin: int, end: int, symbol: str = "XAU"):
     prices = get_history_price(symbol, begin, end)
