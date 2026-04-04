@@ -4,7 +4,7 @@ from jobs.ingest import ingest_gold, ingest_stocks
 scheduler = BackgroundScheduler()
 
 scheduler.add_job(ingest_gold, "interval", hours=8)
-scheduler.add_job(ingest_stocks, "interval", minutes=5)
+scheduler.add_job(ingest_stocks, "interval", minutes=30)
 
 def start():
     scheduler.start()

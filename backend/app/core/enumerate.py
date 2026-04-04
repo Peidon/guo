@@ -1,1 +1,1 @@
-StockSymbols = ["ML8.AX", "MM8.AX"]
+StockSymbols = ["ML8.AX", 'GDR.AX', 'GGR', 'LNQ.AX', "MM8.AX"]
