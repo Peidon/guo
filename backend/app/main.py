@@ -26,6 +26,10 @@ from services.metal_service import get_history_price
 def hello():
     return "Hello, I'm jing service. "
 
+@api.get("/favicon.ico")
+def getIcon():
+    return '<link rel="icon" href="favicon.ico" type="image/x-icon">'
+
 @api.get("/gold")
 def get_gold(begin: int, end: int, symbol: str = "XAU"):
     prices = get_history_price(symbol, begin, end)
