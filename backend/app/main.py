@@ -46,11 +46,11 @@ def get_signal(symbol: str):
         "raw_score": raw_score,
         "score": normalized_score,
         "factors": {
-            "gold_beta": data.get('gold_beta'),
-            "relative_strength": data.get('relative_strength'),
-            "momentum": data.get('momentum'),
-            "volatility": data.get('volatility'),
-            "liquidity": data.get('liquidity')
+            "gold_beta": data.get('gold_beta', 0.0),
+            "relative_strength": data.get('relative_strength',0.0),
+            "momentum": data.get('momentum', 0.0),
+            "volatility": data.get('volatility', 0.0),
+            "liquidity": data.get('liquidity', 0.0)
         },
         "action": classify(normalized_score)
     }

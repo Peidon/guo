@@ -1,9 +1,11 @@
+import logging
+
 from core.db import SessionLocal
 from models.metal_price import MetalPrice
 from models.stock_price import StockPrice
 from sqlalchemy import desc, select
 
-window_width = 20
+window_width = 10
 score_min = -100.0
 score_max = 100.0
 
@@ -50,6 +52,9 @@ def liquidity(volume_series):
     return sum(volume_series[-window_width:]) / window_width
 
 def compute_score(factors):
+    if "gold_beta" not in factors:
+        return 0
+
     score = 0
 
     score += factors["gold_beta"] * 25
@@ -104,7 +109,7 @@ def load_data(symbol: str):
             select(MetalPrice.price)
             .where(
                 MetalPrice.metal == "XAU",
-                MetalPrice.currency == "AUD",
+                MetalPrice.currency == "USD",
                 MetalPrice.price.is_not(None),
             )
             .order_by(desc(MetalPrice.timestamp))
@@ -114,14 +119,12 @@ def load_data(symbol: str):
         db.close()
 
     if len(stock_rows) < window_width:
-        raise ValueError(
-            f"Not enough stock price history for {symbol}. Expected {window_width} rows, found {len(stock_rows)}."
-        )
+        logging.info(f"Not enough stock price history for {symbol}. Expected {window_width} rows, found {len(stock_rows)}.")
+        return {}
 
     if len(gold_prices) < window_width:
-        raise ValueError(
-            f"Not enough gold price history to compute factors. Expected {window_width} rows, found {len(gold_prices)}."
-        )
+        logging.info(f"Not enough gold price history to compute factors. Expected {window_width} rows, found {len(gold_prices)}.")
+        return {}
 
     stock_prices = [float(price) for price, _ in stock_rows]
     volume_series = [int(volume) for _, volume in stock_rows]
