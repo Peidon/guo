@@ -1,5 +1,5 @@
 import unittest
-from generate_overnight_report import fetch_html, parse_investing_quote
+from generate_overnight_report import fetch_html, parse_investing_quote, fetch_tradingeconomics_iron_ore
 import requests
 
 class TestScrap(unittest.TestCase):
@@ -14,6 +14,11 @@ class TestScrap(unittest.TestCase):
             prefer_browser = True
         )
         quote = parse_investing_quote(html, url)
+        self.assertTrue(quote is not None)
+
+    def test_fetch_iron_ore(self):
+        session = requests.session()
+        quote = fetch_tradingeconomics_iron_ore(session, 20)
         self.assertTrue(quote is not None)
 
 

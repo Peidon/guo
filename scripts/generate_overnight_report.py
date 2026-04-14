@@ -25,6 +25,7 @@ from bs4 import BeautifulSoup
 from bs4 import Comment
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, Side
+import yfinance as yf
 
 
 USER_AGENT = (
@@ -46,6 +47,7 @@ REQUEST_HEADERS = {
 }
 
 MARKETINDEX_COMMODITIES_URL = "https://www.marketindex.com.au/commodities"
+TRADING_ECONOMICS_IRON_ORE_URL = "https://tradingeconomics.com/commodity/iron-ore"
 
 
 @dataclass(frozen=True)
@@ -58,6 +60,12 @@ class Quote:
 @dataclass(frozen=True)
 class InvestingPage:
     url: str
+    value_transform: Callable[[Quote], Quote] | None = None
+
+
+@dataclass(frozen=True)
+class YFinanceSource:
+    symbol: str
     value_transform: Callable[[Quote], Quote] | None = None
 
 
@@ -218,6 +226,71 @@ def parse_market_index_commodities(html: str) -> dict[str, Quote]:
     return parsed
 
 
+def quote_from_previous_close(last: float | None, previous_close: float | None) -> Quote:
+    if last is None:
+        return Quote(last=None, change=None, pct_change=None)
+    if previous_close in (None, 0):
+        return Quote(last=last, change=None, pct_change=None)
+    change = last - previous_close
+    pct_change = change / previous_close
+    return Quote(last=last, change=change, pct_change=pct_change)
+
+
+def fetch_yfinance_quote(symbol: str, value_transform: Callable[[Quote], Quote] | None = None) -> Quote:
+    history = yf.Ticker(symbol).history(period="5d", interval="1d", auto_adjust=False)
+    if history.empty:
+        return Quote(last=None, change=None, pct_change=None)
+
+    closes = history["Close"].dropna()
+    if closes.empty:
+        return Quote(last=None, change=None, pct_change=None)
+
+    last = float(closes.iloc[-1])
+    previous_close = float(closes.iloc[-2]) if len(closes) > 1 else None
+    quote = quote_from_previous_close(last, previous_close)
+    if value_transform is not None:
+        quote = value_transform(quote)
+    return quote
+
+
+def fetch_tradingeconomics_iron_ore(session: requests.Session, timeout: int) -> Quote:
+    response = session.get(
+        TRADING_ECONOMICS_IRON_ORE_URL,
+        timeout=timeout,
+        headers=REQUEST_HEADERS,
+    )
+    response.raise_for_status()
+    text = flatten_text(response.text)
+
+    # summary_match = re.search(
+    #     r"Iron Ore rose to ([+\-−]?\d[\d,\.]*) .*? up ([+\-−]?\d[\d,\.]*%) from the previous day",
+    #     text,
+    # )
+    # if summary_match:
+    #     last = summary_match.group(1)
+    #     pct = summary_match.group(2)
+    #     pct_value = normalize_number(pct)
+    #     last_value = normalize_number(last)
+    #     change_value = None
+    #     if last_value is not None and pct_value is not None:
+    #         previous_close = last_value / (1 + (pct_value / 100))
+    #         change_value = last_value - previous_close
+    #     return Quote(
+    #         last=last_value,
+    #         change=change_value,
+    #         pct_change=None if pct_value is None else pct_value / 100,
+    #     )
+
+    row_match = re.search(
+        r"Iron Ore\s+([+\-−]?\d[\d,\.]*)\s+([+\-−]?\d[\d,\.]*)\s+([+\-−]?\d[\d,\.]*%)",
+        text,
+    )
+    if row_match:
+        return quote_from_strings(row_match.group(1), row_match.group(2), row_match.group(3))
+
+    raise ValueError("Could not parse Iron Ore quote from Trading Economics")
+
+
 INVESTING_SOURCES: dict[str, InvestingPage] = {
     "xjo": InvestingPage("https://www.investing.com/indices/aus-200"),
     "spi": InvestingPage("https://www.investing.com/indices/australia-200-futures"),
@@ -235,7 +308,7 @@ INVESTING_SOURCES: dict[str, InvestingPage] = {
         value_transform=yield_quote_to_decimal,
     ),
     "ftse100": InvestingPage("https://www.investing.com/indices/uk-100"),
-    "stoxx600": InvestingPage("https://www.investing.com/indices/stoxx-600"),
+    # "stoxx600": InvestingPage("https://www.investing.com/indices/stoxx-600"),
     "dax": InvestingPage("https://www.investing.com/indices/germany-30"),
     "cac40": InvestingPage("https://www.investing.com/indices/france-40"),
     "nikkei": InvestingPage("https://www.investing.com/indices/japan-ni225"),
@@ -248,10 +321,14 @@ INVESTING_SOURCES: dict[str, InvestingPage] = {
     ),
 }
 
+YFINANCE_SOURCES: dict[str, YFinanceSource] = {
+    "stoxx600": YFinanceSource("^STOXX"),
+}
+
 MARKET_INDEX_KEY_MAP: dict[str, str] = {
     "mi_crude_oil": "Crude Oil",
     "mi_gold": "Gold",
-    "mi_iron_ore": "Iron Ore",
+    # "mi_iron_ore": "Iron Ore",
     "mi_copper": "Copper",
     "mi_aluminium": "Aluminium",
     "mi_nickel": "Nickel",
@@ -318,6 +395,14 @@ def collect_quotes(timeout: int, prefer_browser: bool) -> dict[str, Quote]:
             commodity_name,
             Quote(last=None, change=None, pct_change=None),
         )
+
+    for key, source in YFINANCE_SOURCES.items():
+        quotes[key] = fetch_yfinance_quote(
+            source.symbol,
+            value_transform=source.value_transform,
+        )
+
+    quotes["mi_iron_ore"] = fetch_tradingeconomics_iron_ore(session, timeout)
 
     for key, page in INVESTING_SOURCES.items():
         html = fetch_html(
