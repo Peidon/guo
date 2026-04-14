@@ -222,6 +222,7 @@ INVESTING_SOURCES: dict[str, InvestingPage] = {
     "xjo": InvestingPage("https://www.investing.com/indices/aus-200"),
     "spi": InvestingPage("https://www.investing.com/indices/australia-200-futures"),
     "vix": InvestingPage("https://www.investing.com/indices/volatility-s-p-500"),
+    "asx200vix": InvestingPage("https://www.investing.com/indices/s-p-asx-200-vix"),
     "au10y": InvestingPage(
         "https://www.investing.com/rates-bonds/australia-10-year-bond-yield",
         value_transform=yield_quote_to_decimal,
@@ -267,7 +268,7 @@ ROW_DATA = [
     ("D3", "Pct% 涨跌幅", None),
     ("A4", "XJO 澳洲200指数", "xjo"),
     ("A5", "SPI 澳洲200指数期货", "spi"),
-    ("A6", "VIX Index 恐慌指数", "vix"),
+    ("A6", "VIX Index 恐慌指数", "asx200vix"),
     ("A7", "AUS 10 Yr Bonds\n澳洲10年国债收益率", "au10y"),
     ("A8", "US Market 美国市场", None),
     ("A9", "Dow Jones 道琼斯指数", "dow"),
