@@ -15,6 +15,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import logging
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -235,19 +236,15 @@ def quote_from_previous_close(last: float | None, previous_close: float | None) 
     pct_change = change / previous_close
     return Quote(last=last, change=change, pct_change=pct_change)
 
-
-def fetch_yfinance_quote(symbol: str, value_transform: Callable[[Quote], Quote] | None = None) -> Quote:
-    history = yf.Ticker(symbol).history(period="5d", interval="1d", auto_adjust=False)
-    if history.empty:
+def yfinance_quote_info(symbol: str, value_transform: Callable[[Quote],Quote] | None = None) -> Quote:
+    ticket = yf.Ticker(symbol)
+    if not ticket:
+        logging.error("{} info not exists. ".format(symbol))
         return Quote(last=None, change=None, pct_change=None)
-
-    closes = history["Close"].dropna()
-    if closes.empty:
-        return Quote(last=None, change=None, pct_change=None)
-
-    last = float(closes.iloc[-1])
-    previous_close = float(closes.iloc[-2]) if len(closes) > 1 else None
-    quote = quote_from_previous_close(last, previous_close)
+    info = ticket.fast_info
+    last_price = info.last_price
+    prev_close = info.previous_close
+    quote = quote_from_previous_close(last_price, prev_close)
     if value_transform is not None:
         quote = value_transform(quote)
     return quote
@@ -397,7 +394,7 @@ def collect_quotes(timeout: int, prefer_browser: bool) -> dict[str, Quote]:
         )
 
     for key, source in YFINANCE_SOURCES.items():
-        quotes[key] = fetch_yfinance_quote(
+        quotes[key] = yfinance_quote_info(
             source.symbol,
             value_transform=source.value_transform,
         )
