@@ -1,5 +1,6 @@
 import unittest
-from generate_overnight_report import fetch_html, parse_investing_quote, fetch_tradingeconomics_iron_ore,yfinance_quote_info
+from generate_overnight_report import fetch_html, parse_investing_quote, fetch_tradingeconomics_iron_ore, \
+    yfinance_quote_info, fetch_tradingeconomics_brent
 import requests
 
 class TestScrap(unittest.TestCase):
@@ -23,6 +24,11 @@ class TestScrap(unittest.TestCase):
 
     def test_fetch_stoxx600(self):
         quote = yfinance_quote_info('^STOXX')
+        print(quote)
+
+    def test_fetch_tradingeconomics_brent(self):
+        session = requests.session()
+        quote = fetch_tradingeconomics_brent(session, 20)
         print(quote)
 
 

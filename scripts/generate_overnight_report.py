@@ -49,6 +49,7 @@ REQUEST_HEADERS = {
 
 MARKETINDEX_COMMODITIES_URL = "https://www.marketindex.com.au/commodities"
 TRADING_ECONOMICS_IRON_ORE_URL = "https://tradingeconomics.com/commodity/iron-ore"
+TRADING_ECONOMICS_BRENT_URL = "https://tradingeconomics.com/commodity/brent-crude-oil"
 
 
 @dataclass(frozen=True)
@@ -288,6 +289,44 @@ def fetch_tradingeconomics_iron_ore(session: requests.Session, timeout: int) -> 
     raise ValueError("Could not parse Iron Ore quote from Trading Economics")
 
 
+def fetch_tradingeconomics_brent(session: requests.Session, timeout: int) -> Quote:
+    response = session.get(
+        TRADING_ECONOMICS_BRENT_URL,
+        timeout=timeout,
+        headers=REQUEST_HEADERS,
+    )
+    response.raise_for_status()
+    text = flatten_text(response.text)
+
+    row_match = re.search(
+        r"Brent\s+([+\-−]?\d[\d,\.]*)\s+([+\-−]?\d[\d,\.]*)\s+([+\-−]?\d[\d,\.]*%)",
+        text,
+    )
+    if row_match:
+        return quote_from_strings(row_match.group(1), row_match.group(2), row_match.group(3))
+
+    summary_match = re.search(
+        r"Brent rose to ([+\-−]?\d[\d,\.]*) .*? up ([+\-−]?\d[\d,\.]*%) from the previous day",
+        text,
+    )
+    if summary_match:
+        last = summary_match.group(1)
+        pct = summary_match.group(2)
+        pct_value = normalize_number(pct)
+        last_value = normalize_number(last)
+        change_value = None
+        if last_value is not None and pct_value is not None:
+            previous_close = last_value / (1 + (pct_value / 100))
+            change_value = last_value - previous_close
+        return Quote(
+            last=last_value,
+            change=change_value,
+            pct_change=None if pct_value is None else pct_value / 100,
+        )
+
+    raise ValueError("Could not parse Brent quote from Trading Economics")
+
+
 INVESTING_SOURCES: dict[str, InvestingPage] = {
     "xjo": InvestingPage("https://www.investing.com/indices/aus-200"),
     "spi": InvestingPage("https://www.investing.com/indices/australia-200-futures"),
@@ -323,7 +362,7 @@ YFINANCE_SOURCES: dict[str, YFinanceSource] = {
 }
 
 MARKET_INDEX_KEY_MAP: dict[str, str] = {
-    "mi_crude_oil": "Crude Oil",
+    # "mi_crude_oil": "Crude Oil",
     "mi_gold": "Gold",
     # "mi_iron_ore": "Iron Ore",
     "mi_copper": "Copper",
@@ -393,6 +432,7 @@ def collect_quotes(timeout: int, prefer_browser: bool) -> dict[str, Quote]:
             Quote(last=None, change=None, pct_change=None),
         )
 
+    quotes["mi_crude_oil"] = fetch_tradingeconomics_brent(session, timeout)
     for key, source in YFINANCE_SOURCES.items():
         quotes[key] = yfinance_quote_info(
             source.symbol,
