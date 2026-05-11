@@ -50,6 +50,7 @@ REQUEST_HEADERS = {
 MARKETINDEX_COMMODITIES_URL = "https://www.marketindex.com.au/commodities"
 TRADING_ECONOMICS_IRON_ORE_URL = "https://tradingeconomics.com/commodity/iron-ore"
 TRADING_ECONOMICS_BRENT_URL = "https://tradingeconomics.com/commodity/brent-crude-oil"
+KITCO_GOLD_URL = "https://www.kitco.com/charts/gold"
 
 
 @dataclass(frozen=True)
@@ -82,6 +83,8 @@ def normalize_number(raw: str | None) -> float | None:
         .replace("+", "")
         .replace("¥", "")
         .replace("$", "")
+        .replace("(", "")
+        .replace(")", "")
     )
     if not cleaned:
         return None
@@ -327,6 +330,40 @@ def fetch_tradingeconomics_brent(session: requests.Session, timeout: int) -> Quo
     raise ValueError("Could not parse Brent quote from Trading Economics")
 
 
+def fetch_kitco_gold(session: requests.Session, timeout: int) -> Quote:
+    response = session.get(
+        KITCO_GOLD_URL,
+        timeout=timeout,
+        headers=REQUEST_HEADERS,
+    )
+    response.raise_for_status()
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    price_element = soup.find(
+        "h3",
+        class_=lambda classes: classes
+        and "font-mulish" in classes
+        and "text-4xl" in classes
+        and "font-bold" in classes,
+    )
+    change_container = soup.find(
+        "div",
+        class_=lambda classes: classes
+        and "CommodityPrice_currencyChangeDate__pb28W" in classes,
+    )
+
+    if price_element and change_container:
+        change_spans = change_container.find_all("span")
+        if len(change_spans) >= 2:
+            return quote_from_strings(
+                price_element.get_text(strip=True),
+                change_spans[0].get_text(" ", strip=True),
+                change_spans[1].get_text(" ", strip=True),
+            )
+
+    raise ValueError("Could not parse Gold quote from Kitco")
+
+
 INVESTING_SOURCES: dict[str, InvestingPage] = {
     "xjo": InvestingPage("https://www.investing.com/indices/aus-200"),
     "spi": InvestingPage("https://www.investing.com/indices/australia-200-futures"),
@@ -363,7 +400,7 @@ YFINANCE_SOURCES: dict[str, YFinanceSource] = {
 
 MARKET_INDEX_KEY_MAP: dict[str, str] = {
     # "mi_crude_oil": "Crude Oil",
-    "mi_gold": "Gold",
+    # "mi_gold": "Gold",
     # "mi_iron_ore": "Iron Ore",
     "mi_copper": "Copper",
     "mi_aluminium": "Aluminium",
@@ -433,6 +470,7 @@ def collect_quotes(timeout: int, prefer_browser: bool) -> dict[str, Quote]:
         )
 
     quotes["mi_crude_oil"] = fetch_tradingeconomics_brent(session, timeout)
+    quotes["mi_gold"] = fetch_kitco_gold(session, timeout)
     for key, source in YFINANCE_SOURCES.items():
         quotes[key] = yfinance_quote_info(
             source.symbol,
