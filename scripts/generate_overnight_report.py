@@ -162,26 +162,18 @@ def flatten_text(html: str) -> str:
 
 
 def parse_investing_quote(html: str, url: str) -> Quote:
-    price_match = re.search(
-        r'text-black font-bold">\s*([+\-−]?\d[\d,\.]*)\s*</div>',
-        html,
-    )
-    change_match = re.search(
-        r'<div class="font-medium mr-1">\s*([+\-−]?\d[\d,\.]*)\s*</div>',
-        html,
-    )
-    pct_match = re.search(
-        r'<span>\s*([+\-−]?\d[\d,\.]*%)\s*</span>',
-        html,
-    )
-    if price_match:
+    soup = BeautifulSoup(html, "html.parser")
+    price_element = soup.select_one('[data-test="instrument-price-last"]')
+    change_element = soup.select_one('[data-test="instrument-price-change"]')
+    pct_element = soup.select_one('[data-test="instrument-price-change-percent"]')
+    if price_element:
         return quote_from_strings(
-            price_match.group(1),
-            change_match.group(1) if change_match else None,
-            pct_match.group(1) if pct_match else None,
+            price_element.get_text(strip=True),
+            change_element.get_text(strip=True) if change_element else None,
+            pct_element.get_text(strip=True) if pct_element else None,
         )
 
-    text = flatten_text(html)
+    text = flatten_text(str(soup))
     label = url.rsplit("/", 1)[-1].replace("-", " ").title() if url.startswith("http") else url
     patterns = [
         rf"{re.escape(label)}\s+([+\-−]?\d[\d,\.]*)"
