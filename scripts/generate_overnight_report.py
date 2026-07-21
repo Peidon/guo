@@ -443,7 +443,7 @@ def collect_quotes(timeout: int, prefer_browser: bool) -> dict[str, Quote]:
     session = requests.Session()
     quotes: dict[str, Quote] = {}
 
-    market_index_quotes = parse_market_index_commodities(session, timeout)
+    market_index_quotes = parse_market_index_commodities(session, timeout, prefer_browser)
     for output_key, commodity_name in MARKET_INDEX_KEY_MAP.items():
         quotes[output_key] = market_index_quotes.get(
             commodity_name,
