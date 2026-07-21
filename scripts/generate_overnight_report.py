@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Callable
 
 import requests
+from PIL.JpegImagePlugin import MARKER
 from bs4 import BeautifulSoup
 from bs4 import Comment
 from openpyxl import Workbook
@@ -47,6 +48,7 @@ REQUEST_HEADERS = {
     "Pragma": "no-cache",
 }
 
+MARKET_INDEX_COMMODITIES_URL_PREFIX = "https://www.marketindex.com.au/"
 MARKETINDEX_COMMODITIES_URL = "https://www.marketindex.com.au/commodities"
 TRADING_ECONOMICS_IRON_ORE_URL = "https://tradingeconomics.com/commodity/iron-ore"
 TRADING_ECONOMICS_BRENT_URL = "https://tradingeconomics.com/commodity/brent-crude-oil"
@@ -161,6 +163,26 @@ def flatten_text(html: str) -> str:
     return re.sub(r"\s+", " ", soup.get_text(separator=" ", strip=True))
 
 
+def parse_investing_commodities(html: str, url: str) -> Quote:
+    soup = BeautifulSoup(html, "html.parser")
+    price_element = soup.select_one('div.font-bold[style*="font-size: 2.5rem"]')
+    if price_element:
+        quote_row = price_element.find_parent(
+            "div",
+            class_=lambda classes: classes and "flex" in classes and "items-baseline" in classes,
+        )
+        if quote_row:
+            change_element = quote_row.select_one("div.text-lg.font-bold")
+            pct_element = quote_row.select_one("div.text-base span")
+            return quote_from_strings(
+                price_element.get_text(strip=True),
+                change_element.get_text(strip=True) if change_element else None,
+                pct_element.get_text(strip=True) if pct_element else None,
+            )
+
+    raise ValueError(f"Could not parse Investing quote from {url}")
+
+
 def parse_investing_quote(html: str, url: str) -> Quote:
     soup = BeautifulSoup(html, "html.parser")
     price_element = soup.select_one('[data-test="instrument-price-last"]')
@@ -172,53 +194,26 @@ def parse_investing_quote(html: str, url: str) -> Quote:
             change_element.get_text(strip=True) if change_element else None,
             pct_element.get_text(strip=True) if pct_element else None,
         )
-
-    text = flatten_text(str(soup))
-    label = url.rsplit("/", 1)[-1].replace("-", " ").title() if url.startswith("http") else url
-    patterns = [
-        rf"{re.escape(label)}\s+([+\-−]?\d[\d,\.]*)"
-        rf"(?:\s+ASX .*? Companies)?"
-        rf"(?:\s+([+\-−]?\d[\d,\.]*)\s+\(([+\-−]?\d[\d,\.]*%)\))?",
-        r"Add to Watchlist\s+([+\-−]?\d[\d,\.]*)\s+([+\-−]?\d[\d,\.]*)\s*\(?([+\-−]?\d[\d,\.]*%)\)?",
-        r"Add to/Remove from Watchlist Add to Watchlist\s+([+\-−]?\d[\d,\.]*)\s+([+\-−]?\d[\d,\.]*)\s+([+\-−]?\d[\d,\.]*%)",
-    ]
-    for pattern in patterns:
-        match = re.search(pattern, text)
-        if match:
-            return quote_from_strings(match.group(1), match.group(2), match.group(3))
     raise ValueError(f"Could not parse Investing quote from {url}")
 
 
-def parse_market_index_commodities(html: str) -> dict[str, Quote]:
-    soup = BeautifulSoup(html, "html.parser")
-    commodity_names = [
-        "Iron Ore",
-        "Crude Oil",
-        "Gold",
-        "Copper",
-        "Aluminium",
-        "Nickel",
-        "Zinc",
-        "Lead",
-    ]
+def parse_market_index_commodities(session: requests.Session, timeout: int, prefer_browser: bool) -> dict[str, Quote]:
+    commodity_names = {
+        "Copper" : MARKET_INDEX_COMMODITIES_URL_PREFIX + "copper",
+        "Aluminium": MARKETINDEX_COMMODITIES_URL + "/aluminium",
+        "Nickel": MARKETINDEX_COMMODITIES_URL + "/nickel",
+        "Zinc": MARKETINDEX_COMMODITIES_URL + "/zinc",
+        "Lead": MARKETINDEX_COMMODITIES_URL + "/lead",
+    }
     parsed: dict[str, Quote] = {}
-    for name in commodity_names:
-        title = soup.find(
-            "div",
-            string=lambda value, commodity=name: value and value.strip() == commodity,
+    for name, url in commodity_names.items():
+        html = fetch_html(
+            session,
+            url,
+            timeout=timeout,
+            prefer_browser=prefer_browser,
         )
-        if title is None:
-            continue
-        card = title.find_parent(
-            "div",
-            class_=lambda classes: classes
-            and "rounded-lg" in classes
-            and "bg-white" in classes
-            and "border" in classes,
-        )
-        if card is None:
-            continue
-        parsed[name] = parse_investing_quote(str(card), name)
+        parsed[name] = parse_investing_commodities(html, name)
 
     return parsed
 
@@ -448,13 +443,7 @@ def collect_quotes(timeout: int, prefer_browser: bool) -> dict[str, Quote]:
     session = requests.Session()
     quotes: dict[str, Quote] = {}
 
-    market_index_html = fetch_html(
-        session,
-        MARKETINDEX_COMMODITIES_URL,
-        timeout=timeout,
-        prefer_browser=prefer_browser,
-    )
-    market_index_quotes = parse_market_index_commodities(market_index_html)
+    market_index_quotes = parse_market_index_commodities(session, timeout)
     for output_key, commodity_name in MARKET_INDEX_KEY_MAP.items():
         quotes[output_key] = market_index_quotes.get(
             commodity_name,

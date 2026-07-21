@@ -1,6 +1,6 @@
 import unittest
 from generate_overnight_report import fetch_html, parse_investing_quote, fetch_tradingeconomics_iron_ore, \
-    yfinance_quote_info, fetch_tradingeconomics_brent, fetch_kitco_gold
+    yfinance_quote_info, fetch_tradingeconomics_brent, fetch_kitco_gold, parse_market_index_commodities
 import requests
 
 class TestScrap(unittest.TestCase):
@@ -34,6 +34,11 @@ class TestScrap(unittest.TestCase):
     def test_fetch_gold(self):
         session = requests.session()
         quote = fetch_kitco_gold(session, 20)
+        print(quote)
+
+    def test_fetch_commodities(self):
+        session = requests.session()
+        quote = parse_market_index_commodities(session, 20, True)
         print(quote)
 
 
