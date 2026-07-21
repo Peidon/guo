@@ -22,7 +22,6 @@ from pathlib import Path
 from typing import Callable
 
 import requests
-from PIL.JpegImagePlugin import MARKER
 from bs4 import BeautifulSoup
 from bs4 import Comment
 from openpyxl import Workbook
@@ -249,25 +248,6 @@ def fetch_tradingeconomics_iron_ore(session: requests.Session, timeout: int) -> 
     )
     response.raise_for_status()
     text = flatten_text(response.text)
-
-    # summary_match = re.search(
-    #     r"Iron Ore rose to ([+\-−]?\d[\d,\.]*) .*? up ([+\-−]?\d[\d,\.]*%) from the previous day",
-    #     text,
-    # )
-    # if summary_match:
-    #     last = summary_match.group(1)
-    #     pct = summary_match.group(2)
-    #     pct_value = normalize_number(pct)
-    #     last_value = normalize_number(last)
-    #     change_value = None
-    #     if last_value is not None and pct_value is not None:
-    #         previous_close = last_value / (1 + (pct_value / 100))
-    #         change_value = last_value - previous_close
-    #     return Quote(
-    #         last=last_value,
-    #         change=change_value,
-    #         pct_change=None if pct_value is None else pct_value / 100,
-    #     )
 
     row_match = re.search(
         r"Iron Ore\s+([+\-−]?\d[\d,\.]*)\s+([+\-−]?\d[\d,\.]*)\s+([+\-−]?\d[\d,\.]*%)",
