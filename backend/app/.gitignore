@@ -3,3 +3,5 @@
 .idea/
 **.pyc
 **.log
+**.ipynb_checkpoints/
+**.html
