@@ -7,3 +7,5 @@ fastapi~=0.128.8
 numpy~=2.4.3
 uvicorn[standard]
 psycopg2==2.9.9
+pandas~=3.0.1
+bokeh~=3.9.1
