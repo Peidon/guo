@@ -37,7 +37,7 @@ Include exhibits: margin tree, KPI dashboard, scenario analysis. Use 10-Ks and i
 
 
 
-You are a mining analyst, For WBT.AX, create a value chain report covering:
+You are an industry analyst, For WBT.AX, create a value chain report covering:
 1. Who pays whom and how money flows
 2. Player archetypes at each layer
 3. Where margins concentrate and why
@@ -52,7 +52,7 @@ Layer| Player Type | Revenue Model | Moat | Power Trend.
 
 
 
-You are a financial analyst. For Waratah Minerals Limited (ASX: WTM), analyze:
+You are a financial analyst. For BLACK CAT SYNDICATE LIMITED (ASX: BC8), analyze:
 1. Growth = Volume * Price * Mix * Predicted Year Production * Geography
 2. Margin Tree = Gross -> Operating -> Cash (show all levels)
 3. Unit economics: price, variable costs, AISC(All-In Sustaining Costs), payback
@@ -60,3 +60,16 @@ You are a financial analyst. For Waratah Minerals Limited (ASX: WTM), analyze:
 5. Resources: measured, indicated, inferred
 
 Using filings and transcripts. No valuation. Include sector-specific KPIs.
+
+
+You are a strategy analyst. For VALIANT GOLD LIMITED (ASX: VAL), create a report:
+1. Unit economics: today vs 5-year target
+2. Where to play / How to win framework
+3. Moat renewal: what deepens the advantage?
+4. Growth vectors: new customers, wallet share, new products
+5. Capital allocation: reinvestment vs M&A logic
+6. What breaks at scale vs what tightens
+7. Risk heat map with concrete failure modes
+8. 12-quater roadmap with pass/fail milestones
+
+Include exhibits: margin tree, KPI dashboard, scenario analysis. Use 10-Ks and investor decks.
