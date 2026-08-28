@@ -27,6 +27,7 @@ from bs4 import Comment
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, Side
 import yfinance as yf
+from datetime import date
 
 
 USER_AGENT = (
@@ -562,9 +563,10 @@ def build_workbook(quotes: dict[str, Quote]) -> Workbook:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Generate the overnight market report workbook.")
+    date_string = date.today().isoformat()
     parser.add_argument(
         "--output",
-        default="overnight_data_generated.xlsx",
+        default="~/data/gold/{}.xlsx".format(date_string),
         help="Output workbook path",
     )
     parser.add_argument(
