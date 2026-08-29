@@ -1,7 +1,6 @@
 import yfinance as yf
 import pandas as pd
 from bokeh.plotting import figure, show
-from bokeh.models import HoverTool
 
 if __name__ == '__main__':
 
