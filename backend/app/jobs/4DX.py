@@ -2,7 +2,7 @@
 # and broader US reimbursement scaling.
 
 # Existing Capital Structure as of Aug 2026
-shares_outstanding = 599672265
+shares_outstanding = 601591047
 current_share_price = 3.64
 market_cap = shares_outstanding * current_share_price
 net_cash = 278000000
